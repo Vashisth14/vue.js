@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Leson Apré-Lekol – After-School Lessons</title>
+
+
+  <!-- Icons + Styles -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- Vue 2.7.8 (required) -->
+  <script src="https://unpkg.com/vue@2.7.8/dist/vue.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+    <div id="app" class="container">
+
+        <header class="topbar" role="banner" aria-label="Header">
+            <div class="brand-area">
+                <button class="hamburger"
+                        :aria-expanded="navOpen ? 'true' : 'false'"
+                        aria-controls="mainnav"
+                        @click="toggleNav">
+                <i class="fa-solid fa-bars"></i>
+                </button>
+                <h1 class="brand">After-School Lessons</h1>
+            </div>
+
+            <nav :class="['navbar', { open: navOpen }]" id="mainnav" aria-label="Main navigation">
+                <a href="#lessons"
+                :class="{ active: !showCart }"
+                @click.prevent="goLessons">
+                <i class="fa-solid fa-book-open"></i> Lessons
+                </a>
+
+                <a href="#cart"
+                :class="{ active: showCart }"
+                @click.prevent="goCart">
+                <i class="fa-solid fa-cart-shopping"></i>
+                Cart
+                <span class="chip" aria-live="polite">{{ cartCount }}</span>
+                </a>
+
+                <!-- Optional extra links (non-functional placeholders) -->
+                <a href="#about" class="muted-link">
+                    <i class="fa-solid fa-circle-info"></i> About
+                </a>
+
+                <a href="#contact" class="muted-link">
+                    <i class="fa-solid fa-envelope"></i> Contact
+                </a>
+            </nav>
+            </header>
+
+            <div class="flag-stripe" aria-hidden="true"></div>
+
+
+
+        <!-- TOOLBAR -->
+        <div class="toolbar" role="region" aria-label="Sorting and search">
+            <div class="sorter">
+                <label for="sortKey">Sort by:</label>
+                <select id="sortKey" v-model="sortKey" aria-label="Sort attribute">
+                    <option value="subject">Subject</option>
+                    <option value="location">Location</option>
+                    <option value="price">Price</option>
+                    <option value="spaces">Spaces</option>
+                </select>
+
+                <select v-model="sortDir" aria-label="Sort direction">
+                    <option value="asc">Ascending</option>
+                    <option value="desc">Descending</option>
+                </select>
+            </div>
+
+            <!-- Optional search (front-end filter for now) -->
+            <div class="search">
+                <input v-model.trim="query" type="text" placeholder="Search (optional task)…" aria-label="Search lessons" />
+                <button @click="runSearch" class="secondary">Search</button>
+                <button @click="clearSearch" class="secondary">Clear</button>
+            </div>
+        </div>
+
+        <!-- LESSONS PAGE -->
+        <section v-if="!showCart" class="lessons" aria-label="Lessons list">
+        <ul class="grid">
+            <li v-for="lesson in sortedLessons" :key="lesson._id || lesson.id" class="card">
+            <div class="card-media">
+                <i class="fa-solid fa-book-open"></i>
+            </div>
+            <div class="card-body">
+                <h3>{{ lesson.subject }}</h3>
+
+                <p class="meta">
+                    <span class="badge-soft"><i class="fa-solid fa-location-dot"></i> {{ lesson.location }}</span>
+                    <span class="badge-soft"><i class="fa-solid fa-flag"></i> 🇲🇺 Local</span>
+                    <span class="badge-soft"><i class="fa-solid "></i> {{ currency(lesson.price) }}</span>
+                    <span class="badge-soft" :class="spaceClass(lesson.spaces)">
+                        <i class="fa-solid fa-users"></i> <strong>{{ lesson.spaces }}</strong> spaces
+                    </span>
+                </p>
+
+            </div>
+            <div class="card-actions">
+                <button :disabled="lesson.spaces === 0" @click="addToCart(lesson)">
+                {{ lesson.spaces === 0 ? 'Sold out' : 'Add to Cart' }}
+                </button>
+            </div>
+            </li>
+        </ul>
+        </section>
+
+        <!-- CART PAGE -->
+        <section v-else class="cart" aria-label="Shopping cart">
+        <h2>Your Cart</h2>
+        <div v-if="cart.length === 0" class="empty">No items. Go add some lessons!</div>
+
+        <ul class="cart-list" v-else>
+            <li v-for="(item, idx) in cart" :key="item.id + ':' + idx" class="cart-row">
+            <div>
+                <h4>{{ item.subject }}</h4>
+                <p>{{ item.location }} — {{ currency(item.price) }}</p>
+            </div>
+            <button class="danger" @click="removeFromCart(idx)">Remove</button>
+            </li>
+        </ul>
+
+        <div class="checkout" aria-label="Checkout">
+            <h3>Checkout</h3>
+            <form @submit.prevent="submitOrder" novalidate>
+            <label>
+                Name
+                <input v-model.trim="order.name" type="text" placeholder="Letters only" required aria-describedby="nameHelp"/>
+                <small id="nameHelp" class="hint" :class="{ error: order.name && !validName }">
+                {{ order.name && !validName ? 'Name should contain letters/spaces only.' : ' ' }}
+                </small>
+            </label>
+            <label>
+                Phone
+                <input v-model.trim="order.phone" type="text" placeholder="Numbers only" required aria-describedby="phoneHelp"/>
+                <small id="phoneHelp" class="hint" :class="{ error: order.phone && !validPhone }">
+                {{ order.phone && !validPhone ? 'Phone should be digits only.' : ' ' }}
+                </small>
+            </label>
+
+            <button :disabled="!validName || !validPhone || cart.length===0 || isLoading" type="submit">
+                <span v-if="!isLoading">Submit Order</span>
+                <span v-else><i class="fa-solid fa-spinner fa-spin"></i> Submitting…</span>
+            </button>
+            </form>
+            <p v-if="orderMessage" class="success">{{ orderMessage }}</p>
+        </div>
+        </section>
+
+        <!-- Toast -->
+        <div v-if="toast" class="toast" role="status" aria-live="polite">{{ toast }}</div>
+
+        <footer class="footer">
+            <div class="footer-inner">
+                <div class="footer-grid">
+                <div>
+                    <h4>After-School Lessons</h4>
+                    <p class="muted">Helping students find great activities.</p>
+                </div>
+                <nav class="footer-nav">
+                    <a href="#">Home</a>
+                    <a href="#">Lessons</a>
+                    <a href="#">Cart</a>
+                    <a href="#">Contact</a>
+                </nav>
+                <div class="footer-social">
+                    <a href="#" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
+                    <a href="#" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="#" aria-label="Twitter"><i class="fa-brands fa-x-twitter"></i></a>
+                </div>
+                </div>
+                <div class="footer-meta">
+                <small>© CST3144 – Full-Stack Coursework</small>
+                </div>
+            </div>
+        </footer>
+
+    </div>
+</body>
+</html>
