@@ -9,27 +9,48 @@ new Vue({
     query: '',
     isLoading: false,
     toast: '',
+    theme: 'mauritius',
+    
     // Mock lessons for now – later replace with fetch(`${API_BASE}/lessons`)
     lessons: [
       { id: 1,  subject: 'Mathematics',        location: 'Port Louis',     price: 1000, spaces: 5 },
       { id: 2,  subject: 'English Skills',     location: 'Rose-Hill',      price: 900,  spaces: 5 },
       { id: 3,  subject: 'Science Lab',        location: 'Curepipe',       price: 950,  spaces: 5 },
-      { id: 4,  subject: 'History of Mauritius', location: 'Moka',         price: 800,  spaces: 4 },
-      { id: 5,  subject: 'Coding (Beginner)',  location: 'Ebène (Online)', price: 1200, spaces: 6 },
+      { id: 4,  subject: 'History of Mauritius', location: 'Moka',         price: 800,  spaces: 5 },
+      { id: 5,  subject: 'Coding (Beginner)',  location: 'Ebène (Online)', price: 1200, spaces: 5 },
       { id: 6,  subject: 'Art & Craft',        location: 'Quatre Bornes',  price: 700,  spaces: 5 },
-      { id: 7,  subject: 'Music – Ravanne',    location: 'Vacoas',         price: 850,  spaces: 3 },
+      { id: 7,  subject: 'Music – Ravanne',    location: 'Vacoas',         price: 850,  spaces: 5 },
       { id: 8,  subject: 'Sega Dance Basics',  location: 'Flic-en-Flac',   price: 900,  spaces: 5 },
       { id: 9,  subject: 'Robotics Club',      location: 'Grand Baie',     price: 1500, spaces: 5 },
       { id: 10, subject: 'PE & Fitness',       location: 'Beau-Bassin',    price: 600,  spaces: 5 }
     ],
+
     cart: [],
     order: { name: '', phone: '' },
     orderMessage: ''
   },
+  created(){
+    this.applyTheme();
+  },
+  watch:{
+    theme(){ this.applyTheme(); }
+  },
   computed: {
-    cartCount() { return this.cart.length; },
-    sortedLessons() {
-      const base = this.lessons;
+    cartCount () { return this.cart.length; },
+
+    // Live search: filter by `query`, then sort by selected key/direction
+    sortedLessons () {
+      const q = (this.query || '').toString().trim().toLowerCase();
+
+      const base = q
+        ? this.lessons.filter(l =>
+            String(l.subject).toLowerCase().includes(q) ||
+            String(l.location).toLowerCase().includes(q) ||
+            String(l.price).toLowerCase().includes(q) ||
+            String(l.spaces).toLowerCase().includes(q)
+          )
+        : this.lessons;
+
       const key = this.sortKey;
       const dir = this.sortDir;
       return base.slice().sort((a, b) => {
@@ -37,7 +58,7 @@ new Vue({
         if (typeof va === 'string') va = va.toLowerCase();
         if (typeof vb === 'string') vb = vb.toLowerCase();
         if (va < vb) return dir === 'asc' ? -1 : 1;
-        if (va > vb) return dir === 'asc' ? 1 : -1;
+        if (va > vb) return dir === 'asc' ?  1 : -1;
         return 0;
       });
     },
@@ -48,6 +69,10 @@ new Vue({
     },
   },
   methods: {
+    applyTheme(){
+      // set attribute on <html> so all CSS can theme via [data-theme]
+      document.documentElement.setAttribute('data-theme', this.theme);
+    },
     currency(n){
   try{
     return new Intl.NumberFormat('en-MU', {
@@ -95,25 +120,14 @@ new Vue({
         this.flashToast('Order placed');
       }, 500);
     },
-    runSearch() {
-      if (!this.query) return;
-      const q = this.query.toLowerCase();
-      this.lessons = this.lessons.filter(l =>
-        String(l.subject).toLowerCase().includes(q) ||
-        String(l.location).toLowerCase().includes(q) ||
-        String(l.price).toLowerCase().includes(q) ||
-        String(l.spaces).toLowerCase().includes(q)
-      );
-    },
-    clearSearch() {
-      this.query = '';
-      window.location.reload(); // simple reset for mock data
-    },
-    flashToast(msg) {
+    clearSearch () { this.query = ''; },
+
+    flashToast (msg) {
       this.toast = msg;
       setTimeout(() => { this.toast = ''; }, 1200);
     },
-    spaceClass(spaces) {
+
+    spaceClass (spaces) {
       if (spaces === 0) return 'spaces-zero';
       if (spaces <= 2) return 'spaces-low';
       return 'spaces-ok';
