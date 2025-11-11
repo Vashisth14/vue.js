@@ -10,14 +10,15 @@
       content="default-src 'self';
                connect-src 'self' http://localhost:8080 http://127.0.0.1:8080;
                img-src 'self' data:;
-               style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com;
+               style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com;
                script-src 'self' https://unpkg.com https://cdnjs.cloudflare.com 'unsafe-eval' 'unsafe-inline';
-               font-src 'self' https://cdnjs.cloudflare.com data:;">
+               font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com data:;">
 
 
   <!-- Icons + Styles -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer"/>
   <link rel="stylesheet" href="style.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&display=swap" rel="stylesheet">
 
   <!-- Vue 2.7.8 (must be this build for your coursework) -->
   <script src="https://unpkg.com/vue@2.7.8/dist/vue.js"></script>
@@ -33,7 +34,7 @@
         <button class="hamburger" :aria-expanded="navOpen ? 'true' : 'false'" aria-controls="mainnav" @click="toggleNav">
           <i class="fa-solid fa-bars"></i>
         </button>
-        <h1 class="brand">After-School Lessons</h1>
+        <h1 class="brand"><span>After-School Lessons</span></h1>
       </div>
 
       <nav :class="['navbar', { open: navOpen }]" id="mainnav" aria-label="Main navigation">
@@ -86,9 +87,42 @@
           aria-label="Live search"
           @keydown.esc="clearSearch"
         />
-        <small class="muted">Results update automatically. Press Esc to clear.</small>
+        <button v-if="query" type="button" class="clear-btn" @click="clearSearch">Clear</button>
       </div>
     </div>
+
+    <!-- Floating sidebar (outside cards) -->
+    <transition name="flycart">
+      <aside class="flycart" v-if="cart.length && !showCart">
+        <header>
+          <h3>Selected items</h3>
+          <small class="muted">{{ cartCount }} item{{ cartCount>1?'s':'' }} • {{ currency(cartSubtotal) }}</small>
+        </header>
+
+        <ul class="flycart-list">
+          <li v-for="entry in groupedCart" :key="entry.key">
+            <div class="title">{{ entry.subject }}</div>
+            <div class="meta">{{ entry.location }}</div>
+            <div class="price">{{ currency(entry.price * entry.qty) }}</div>
+
+            <div class="qty">
+              <div class="qty-pill">
+                <button class="qbtn minus" @click="decQty(entry)" :disabled="entry.qty <= 1">−</button>
+                <span class="qnum">{{ entry.qty }}</span>
+                <button class="qbtn plus"  @click="incQty(entry)" :disabled="remainingSpacesById(entry.key) === 0">+</button>
+              </div>
+            </div>
+
+            <button class="mini danger" @click="removeEntry(entry)">Remove</button>
+          </li>
+        </ul>
+
+        <div class="flycart-actions">
+          <button class="secondary" @click="goCart">Go to Cart</button>
+          <button @click="goCart">Checkout</button>
+        </div>
+      </aside>
+    </transition>
 
     <!-- ===== LESSONS PAGE ===== -->
     <section v-if="!showCart" class="lessons" aria-label="Lessons list">
@@ -102,17 +136,24 @@
             <p class="meta">
               <span class="badge-soft"><i class="fa-solid fa-location-dot"></i> {{ lesson.location }}</span>
               <span class="badge-soft"><i class="fa-solid fa-money-bill-wave"></i> {{ currency(lesson.price) }}</span>
-              <span class="badge-soft" :class="spaceClass(lesson.spaces)">
-                <i class="fa-solid fa-users"></i> <strong>{{ lesson.spaces }}</strong> spaces
+              <span class="badge-soft" :class="spaceClass(remainingSpaces(lesson))">
+                <i class="fa-solid fa-users"></i>
+                <strong>{{ remainingSpaces(lesson) }}</strong> spaces
               </span>
+
             </p>
           </div>
 
           <div class="card-actions">
-            <button :disabled="lesson.spaces === 0" @click="addToCart(lesson)">
-              {{ lesson.spaces === 0 ? 'Sold out' : 'Add to Cart / Azout Panier' }}
+            <button
+              :title="remainingSpaces(lesson) + ' space(s) left'"
+              :disabled="remainingSpaces(lesson) === 0"
+              @click="addToCart(lesson)"
+            >
+              {{ remainingSpaces(lesson) === 0 ? 'Sold out' : 'Add to Cart / Azout Panier' }}
             </button>
           </div>
+
         </li>
       </ul>
 
@@ -128,44 +169,88 @@
     <section v-else class="cart" aria-label="Shopping cart">
       <h2>Your Cart</h2>
 
-      <div v-if="cart.length === 0" class="empty">No items. Go add some lessons!</div>
+      <div v-if="groupedCart.length === 0" class="empty">No items. Go add some lessons!</div>
 
-      <ul class="cart-list" v-else>
-        <li v-for="(item, idx) in cart" :key="(item._id || item.id) + ':' + idx" class="cart-row">
-          <div>
-            <h4>{{ item.subject }}</h4>
-            <p>{{ item.location }} — {{ currency(item.price) }}</p>
+      <div v-else class="cart-panel">
+        <ul class="cart-table">
+          <li class="cart-head">
+            <span>Lesson</span>
+            <span>Location</span>
+            <span>Qty</span>
+            <span>Price</span>
+            <span>Total</span>
+            <span></span>
+          </li>
+
+          <li v-for="entry in groupedCart" :key="entry.key" class="cart-row">
+            <span class="title">{{ entry.subject }}</span>
+            <span class="meta">{{ entry.location }}</span>
+
+            <!-- Qty stepper (uses your existing incQty/decQty) -->
+            <span class="qty">
+              <div class="qty-pill">
+                <button class="qbtn minus"
+                        @click="decQty(entry)"
+                        :disabled="entry.qty <= 1">−</button>
+                <span class="qnum">{{ entry.qty }}</span>
+                <button class="qbtn plus"
+                        @click="incQty(entry)"
+                        :disabled="remainingSpacesById(entry.key) === 0">+</button>
+              </div>
+            </span>
+
+            <span class="price">{{ currency(entry.price) }}</span>
+            <span class="line-total">{{ currency(entry.price * entry.qty) }}</span>
+
+            <span class="actions">
+              <button class="mini danger" @click="removeEntry(entry)">Remove</button>
+            </span>
+          </li>
+        </ul>
+
+        <!-- Totals + actions -->
+        <div class="cart-summary">
+          <div class="totals">
+            <div><span>Subtotal</span><strong>{{ currency(cartSubtotal) }}</strong></div>
+            <!-- If you want VAT etc., uncomment and adjust:
+            <div><span>VAT (15%)</span><strong>{{ currency(cartSubtotal * 0.15) }}</strong></div>
+            <div class="grand"><span>Total</span><strong>{{ currency(cartSubtotal * 1.15) }}</strong></div>
+            -->
           </div>
-          <button class="danger" @click="removeFromCart(idx)">Remove</button>
-        </li>
-      </ul>
 
-      <div class="checkout" aria-label="Checkout">
-        <h3>Checkout</h3>
-        <form @submit.prevent="submitOrder" novalidate>
-          <label>
-            Name
-            <input v-model.trim="order.name" type="text" placeholder="Letters only" required aria-describedby="nameHelp"/>
-            <small id="nameHelp" class="hint" :class="{ error: order.name && !validName }">
-              {{ order.name && !validName ? 'Name should contain letters/spaces only.' : ' ' }}
-            </small>
-          </label>
+          <div class="summary-actions">
+            <button class="secondary" @click="cart = []">Clear cart</button>
+          </div>
+        </div>
 
-          <label>
-            Phone
-            <input v-model.trim="order.phone" type="text" placeholder="12345678" required aria-describedby="phoneHelp"/>
-            <small id="phoneHelp" class="hint" :class="{ error: order.phone && !validPhone }">
-              {{ order.phone && !validPhone ? 'Use 8 digits' : ' ' }}
-            </small>
-          </label>
+        <!-- Checkout form -->
+        <div class="checkout" aria-label="Checkout">
+          <h3>Checkout</h3>
+          <form @submit.prevent="submitOrder" novalidate>
+            <label>
+              Name
+              <input v-model.trim="order.name" type="text" placeholder="Letters only" required aria-describedby="nameHelp"/>
+              <small id="nameHelp" class="hint" :class="{ error: order.name && !validName }">
+                {{ order.name && !validName ? 'Name should contain letters/spaces only.' : ' ' }}
+              </small>
+            </label>
 
-          <button :disabled="!validName || !validPhone || cart.length===0 || isLoading" type="submit">
-            <span v-if="!isLoading">Submit Order</span>
-            <span v-else><i class="fa-solid fa-spinner fa-spin"></i> Submitting…</span>
-          </button>
-        </form>
+            <label>
+              Phone
+              <input v-model.trim="order.phone" type="text" placeholder="12345678" required aria-describedby="phoneHelp"/>
+              <small id="phoneHelp" class="hint" :class="{ error: order.phone && !validPhone }">
+                {{ order.phone && !validPhone ? 'Use 8 digits' : ' ' }}
+              </small>
+            </label>
 
-        <p v-if="orderMessage" class="success">{{ orderMessage }}</p>
+            <button :disabled="!validName || !validPhone || groupedCart.length===0 || isLoading" type="submit">
+              <span v-if="!isLoading">Submit Order</span>
+              <span v-else><i class="fa-solid fa-spinner fa-spin"></i> Submitting…</span>
+            </button>
+          </form>
+
+          <p v-if="orderMessage" class="success">{{ orderMessage }}</p>
+        </div>
       </div>
     </section>
 
