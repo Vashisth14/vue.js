@@ -63,7 +63,7 @@
     <div class="flag-stripe" aria-hidden="true"></div>
 
     <!-- ===== TOOLBAR ===== -->
-    <div class="toolbar" role="region" aria-label="Sorting and search">
+    <div v-if="!showCart" class="toolbar" role="region" aria-label="Sorting and search">
       <div class="sorter">
         <label for="sortKey">Sort by:</label>
         <select id="sortKey" v-model="sortKey" aria-label="Sort attribute">
@@ -169,93 +169,108 @@
     </section>
 
     <!-- ===== CART PAGE ===== -->
-    <section v-else class="cart" aria-label="Shopping cart">
-      <h2>Your Cart</h2>
+  <section v-else class="cart" aria-label="Shopping cart">
+    <h2>Your Cart</h2>
 
-      <div v-if="groupedCart.length === 0" class="empty">No items. Go add some lessons!</div>
+    <div v-if="groupedCart.length === 0" class="empty">No items. Go add some lessons!</div>
 
-      <div v-else class="cart-panel">
-        <ul class="cart-table">
-          <li class="cart-head">
-            <span>Lesson</span>
-            <span>Location</span>
-            <span>Qty</span>
-            <span>Price</span>
-            <span>Total</span>
-            <span></span>
-          </li>
+    <!-- Two-column layout: LEFT (cart + checkout) | RIGHT (summary) -->
+    <div v-else class="cart-layout">
+      <!-- LEFT -->
+      <div class="cart-main">
+        <div class="cart-panel">
+          <ul class="cart-table">
+            <li class="cart-head">
+              <span>Lesson</span>
+              <span>Location</span>
+              <span>Qty</span>
+              <span>Price</span>
+              <span>Total</span>
+              <span></span>
+            </li>
 
-          <li v-for="entry in groupedCart" :key="entry.key" class="cart-row">
-            <span class="title">{{ entry.subject }}</span>
-            <span class="meta">{{ entry.location }}</span>
+            <li v-for="entry in groupedCart" :key="entry.key" class="cart-row">
+              <span class="title">{{ entry.subject }}</span>
+              <span class="meta">{{ entry.location }}</span>
 
-            <!-- Qty stepper (uses your existing incQty/decQty) -->
-            <span class="qty">
-              <div class="qty-pill">
-                <button class="qbtn minus"
-                        @click="decQty(entry)"
-                        :disabled="entry.qty <= 1">−</button>
-                <span class="qnum">{{ entry.qty }}</span>
-                <button class="qbtn plus"
-                        @click="incQty(entry)"
-                        :disabled="remainingSpacesById(entry.key) === 0">+</button>
-              </div>
-            </span>
+              <span class="qty">
+                <div class="qty-pill">
+                  <button class="qbtn minus" @click="decQty(entry)" :disabled="entry.qty <= 1">−</button>
+                  <span class="qnum">{{ entry.qty }}</span>
+                  <button class="qbtn plus"  @click="incQty(entry)" :disabled="remainingSpacesById(entry.key) === 0">+</button>
+                </div>
+              </span>
 
-            <span class="price">{{ currency(entry.price) }}</span>
-            <span class="line-total">{{ currency(entry.price * entry.qty) }}</span>
+              <span class="price">{{ currency(entry.price) }}</span>
+              <span class="line-total">{{ currency(entry.price * entry.qty) }}</span>
 
-            <span class="actions">
-              <button class="mini danger" @click="removeEntry(entry)">Remove</button>
-            </span>
-          </li>
-        </ul>
+              <span class="actions">
+                <button class="mini danger" @click="removeEntry(entry)">Remove</button>
+              </span>
+            </li>
+          </ul>
 
-        <!-- Totals + actions -->
-        <div class="cart-summary">
-          <div class="totals">
-            <div><span>Subtotal</span><strong>{{ currency(cartSubtotal) }}</strong></div>
-            <!-- If you want VAT etc., uncomment and adjust:
-            <div><span>VAT (15%)</span><strong>{{ currency(cartSubtotal * 0.15) }}</strong></div>
-            <div class="grand"><span>Total</span><strong>{{ currency(cartSubtotal * 1.15) }}</strong></div>
-            -->
+          <!-- Totals under table (optional, keeps context on the left) -->
+          <div class="cart-summary">
+            <div class="totals">
+              <div><span>Subtotal</span><strong>{{ currency(cartSubtotal) }}</strong></div>
+            </div>
+            <div class="summary-actions">
+              <button class="secondary" @click="cart = []">Clear cart</button>
+            </div>
           </div>
 
-          <div class="summary-actions">
-            <button class="secondary" @click="cart = []">Clear cart</button>
+          <!-- Checkout form -->
+          <div id="checkout" class="checkout" aria-label="Checkout">
+            <h3>Checkout</h3>
+            <form @submit.prevent="submitOrder" novalidate>
+              <label>
+                Name
+                <input v-model.trim="order.name" type="text" placeholder="Letters only" required />
+                <small class="hint" :class="{ error: order.name && !validName }">
+                  {{ order.name && !validName ? 'Name should contain letters/spaces only.' : ' ' }}
+                </small>
+              </label>
+
+              <label>
+                Phone
+                <input v-model.trim="order.phone" type="text" placeholder="12345678" required />
+                <small class="hint" :class="{ error: order.phone && !validPhone }">
+                  {{ order.phone && !validPhone ? 'Use 8 digits' : ' ' }}
+                </small>
+              </label>
+
+              <button :disabled="!validName || !validPhone || groupedCart.length===0 || isLoading" type="submit">
+                <span v-if="!isLoading">Submit Order</span>
+                <span v-else><i class="fa-solid fa-spinner fa-spin"></i> Submitting…</span>
+              </button>
+            </form>
+            <p v-if="orderMessage" class="success">{{ orderMessage }}</p>
           </div>
-        </div>
-
-        <!-- Checkout form -->
-        <div class="checkout" aria-label="Checkout">
-          <h3>Checkout</h3>
-          <form @submit.prevent="submitOrder" novalidate>
-            <label>
-              Name
-              <input v-model.trim="order.name" type="text" placeholder="Letters only" required aria-describedby="nameHelp"/>
-              <small id="nameHelp" class="hint" :class="{ error: order.name && !validName }">
-                {{ order.name && !validName ? 'Name should contain letters/spaces only.' : ' ' }}
-              </small>
-            </label>
-
-            <label>
-              Phone
-              <input v-model.trim="order.phone" type="text" placeholder="12345678" required aria-describedby="phoneHelp"/>
-              <small id="phoneHelp" class="hint" :class="{ error: order.phone && !validPhone }">
-                {{ order.phone && !validPhone ? 'Use 8 digits' : ' ' }}
-              </small>
-            </label>
-
-            <button :disabled="!validName || !validPhone || groupedCart.length===0 || isLoading" type="submit">
-              <span v-if="!isLoading">Submit Order</span>
-              <span v-else><i class="fa-solid fa-spinner fa-spin"></i> Submitting…</span>
-            </button>
-          </form>
-
-          <p v-if="orderMessage" class="success">{{ orderMessage }}</p>
         </div>
       </div>
-    </section>
+
+      <!-- RIGHT: sticky order summary -->
+      <aside class="order-summary">
+        <h3>Order Summary</h3>
+        <ul class="totals">
+          <li><span>Items</span><strong>{{ totalQty }}</strong></li>
+          <li><span>Subtotal</span><strong>{{ currency(cartSubtotal) }}</strong></li>
+          <li><span>VAT (15%)</span><strong>{{ currency(vatAmount) }}</strong></li>
+          <li class="grand"><span>Total</span><strong>{{ currency(grandTotal) }}</strong></li>
+        </ul>
+
+        <button class="proceed" :disabled="groupedCart.length===0" @click="scrollToCheckout">
+          <i class="fa-solid fa-arrow-right-to-bracket"></i>
+          Proceed to Checkout
+        </button>
+
+        <small class="muted">You’ll confirm your details below.</small>
+        <button class="secondary wfull mt8" @click="cart = []">Clear cart</button>
+      </aside>
+    </div>
+  </section>
+
 
     <!-- Toast -->
     <div v-if="toast" class="toast" role="status" aria-live="polite">{{ toast }}</div>

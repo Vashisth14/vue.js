@@ -72,6 +72,11 @@ new Vue({
       return Math.max(1, Math.ceil(this.total / this.limit));
     },
 
+    totalQty(){ return this.groupedCart.reduce((n,e)=> n + e.qty, 0); },
+    vatAmount(){ return this.cartSubtotal * 0.15; },
+    grandTotal(){ return this.cartSubtotal + this.vatAmount; },
+
+
     // Group identical lessons (for sidebar + subtotal)
     groupedCart() {
       const byId = {};
@@ -341,6 +346,13 @@ new Vue({
       } finally {
         this.isLoading = false;
       }
+    },
+
+    scrollToCheckout(){
+      this.$nextTick(()=>{
+        const el = document.getElementById('checkout');
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
     },
 
     // ==================== Visual helpers ====================
