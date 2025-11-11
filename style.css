@@ -592,3 +592,33 @@ button.danger{
   .flycart-enter-from,
   .flycart-leave-to{ filter:none; transform:none; }
 }
+
+/* ===== Card media with real image or icon fallback ===== */
+.card-media{
+  position: relative;
+  height: 200px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  display: grid; place-items: center;
+  background: radial-gradient(80% 120% at 50% 0%,
+             color-mix(in srgb, var(--panel) 92%, transparent),
+             transparent 70%);
+  border-top-left-radius: 12px; border-top-right-radius: 12px;
+  overflow: hidden;
+}
+.card-media .thumb{
+  width: 100%; height: 100%; object-fit: cover; display: block;
+  transform: scale(1.02);
+}
+.card-media i{
+  font-size: 40px; opacity: .9;
+  background: linear-gradient(135deg, var(--primary), var(--primary-2));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 6px 16px color-mix(in srgb, var(--primary) 35%, transparent));
+}
+
+/* optional: soft top border glow for image */
+.card-media::after{
+  content:""; position:absolute; inset:auto 0 0 0; height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--primary) 35%, transparent), transparent);
+  opacity:.55;
+}

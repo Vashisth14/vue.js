@@ -127,9 +127,12 @@
     <!-- ===== LESSONS PAGE ===== -->
     <section v-if="!showCart" class="lessons" aria-label="Lessons list">
       <ul class="grid">
-        <!-- IMPORTANT: use `lessons` (data from backend) -->
         <li v-for="lesson in lessons" :key="lesson._id || lesson.id" class="card">
-          <div class="card-media"><i class="fa-solid fa-book-open"></i></div>
+          <div class="card-media">
+            <img v-if="lessonImage(lesson)" :src="lessonImage(lesson)" alt="" class="thumb" loading="lazy"
+                @error="$event.target.style.display='none'">
+            <i v-else :class="lessonIcon(lesson)" aria-hidden="true"></i>
+          </div>
 
           <div class="card-body">
             <h3>{{ lesson.subject }}</h3>

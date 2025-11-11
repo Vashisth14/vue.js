@@ -198,6 +198,48 @@ new Vue({
       }
     },
 
+    // Return an image URL if present or if a file with a conventional name exists,
+    // else null to use an icon. Adjust the folder/name rule to your setup.
+    lessonImage(lesson){
+      if (lesson.image) return lesson.image;                       // backend-provided URL
+      const slug = this.slug(String(lesson.subject || ''));        // e.g., "coding-beginner"
+      // convention: /images/lessons/<slug>.jpg — change extension/folder if needed
+      // If you don’t have these files yet, this will 404 and we’ll fall back to icon.
+      return `images/lessons/${slug}.png`;
+    },
+
+    lessonIcon(lesson){
+    const s = String(lesson.subject || '').toLowerCase();
+
+    if (s.includes('coding') || s.includes('program'))
+      return 'fa-solid fa-laptop-code';
+    if (s.includes('math'))
+      return 'fa-solid fa-square-root-variable';
+    if (s.includes('english') || s.includes('language'))
+      return 'fa-solid fa-book-open';
+    if (s.includes('history'))
+      return 'fa-solid fa-landmark';
+    if (s.includes('music'))
+      return 'fa-solid fa-music';
+    if (s.includes('art') || s.includes('craft'))
+      return 'fa-solid fa-palette';
+    if (s.includes('science'))
+      return 'fa-solid fa-flask';
+    if (s.includes('geography'))
+      return 'fa-solid fa-globe-asia';
+    if (s.includes('pe') || s.includes('fitness'))
+      return 'fa-solid fa-person-running';
+    // default
+    return 'fa-solid fa-book';
+  },
+
+    // Slug helper
+    slug(str){
+      return str
+        .normalize('NFKD').replace(/[\u0300-\u036f]/g,'') // strip accents
+        .toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+    },
+
     nextPage() {
       if (this.page < this.totalPages) {
         this.page++;
@@ -230,18 +272,18 @@ new Vue({
     },
 
     addToCart(lesson){
-  const can = this.remainingSpaces(lesson);
-  if (can <= 0) {
-    this.flashToast('No spaces left for this lesson.');
-    return;
-  }
-  this.cart.push({
-    ...(lesson._id ? { _id: lesson._id } : { id: lesson.id }),
-    subject: lesson.subject,
-    location: lesson.location,
-    price: Number(lesson.price) || 0
-  });
-},
+      const can = this.remainingSpaces(lesson);
+      if (can <= 0) {
+        this.flashToast('No spaces left for this lesson.');
+        return;
+      }
+      this.cart.push({
+        ...(lesson._id ? { _id: lesson._id } : { id: lesson.id }),
+        subject: lesson.subject,
+        location: lesson.location,
+        price: Number(lesson.price) || 0
+      });
+    },
 
 
     // Sidebar steppers
