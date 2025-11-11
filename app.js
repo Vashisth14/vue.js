@@ -26,7 +26,6 @@ new Vue({
     // cart/order
     cart: [],
     order: { name: '', phone: '' },
-
   },
   
   created(){
@@ -37,6 +36,10 @@ new Vue({
   },
 
   watch:{
+    theme(newVal){
+    this.applyTheme();
+    localStorage.setItem('theme', newVal);
+  },
     // live search (debounced 150ms)
     query(val){
       clearTimeout(this._qt);
