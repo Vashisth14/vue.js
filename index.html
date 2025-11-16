@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>After-School Lessons</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!--  SECURITY POLICY: allows API calls + external fonts/icons -->
+  <meta http-equiv="Content-Security-Policy"
+      content="default-src 'self';
+               connect-src 'self' https://node-js-d2bi.onrender.com;
+               img-src 'self' data:;
+               style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com;
+               script-src 'self' https://unpkg.com https://cdnjs.cloudflare.com 'unsafe-eval' 'unsafe-inline';
+               font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com data:;">
+
+
+  <!-- Icons + Styles -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer"/>
+  <link rel="stylesheet" href="style.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+
+  <!-- Vue 2.7.8 -->
+  <script src="https://unpkg.com/vue@2.7.8/dist/vue.js"></script>
+
+  <!-- MAIN APP SCRIPT -->
+  <script defer src="app.js"></script>
+</head>
+
+<body>
+  <div id="app" class="container">
+    <!-- ===== NAVBAR ===== -->
+    <header class="topbar" role="banner" aria-label="Header">
+      <div class="brand-area">
+
+        <!-- Mobile hamburger toggles navigation -->
+        <button class="hamburger"
+                :aria-expanded="navOpen ? 'true' : 'false'"
+                aria-controls="mainnav" 
+                @click="toggleNav">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+
+        <!-- Website Title -->
+        <h1 class="brand"><span>After-School Lessons</span></h1>
+      </div>
+
+       <!-- Navigation links (Lessons / Cart / Theme switcher) -->
+      <nav :class="['navbar', { open: navOpen }]" id="mainnav" aria-label="Main navigation">
+
+        <!-- Go to Lessons List -->
+        <a href="#lessons"
+          :class="{ active: !showCart }"
+          @click.prevent="goLessons">
+          <i class="fa-solid fa-book-open"></i> Lessons
+        </a>
+
+        <!-- Go to Cart(disabled when empty) -->
+        <a href="#cart"
+          :class="[{active: showCart}, {disabled: cartCount===0}]"
+          @click.prevent="cartCount>0 && goToCart()">
+          <i class="fa-solid fa-cart-shopping"></i>
+           Cart <span class="chip">{{ cartCount }}</span>
+        </a>
+
+        <!-- Theme switcher -->
+        <div class="theme-switch">
+          <i class="fa-solid fa-palette"></i>
+          <select v-model="theme" aria-label="Theme">
+            <option value="mauritius">Mauritius</option>
+            <option value="lagoon">Lagoon</option>
+            <option value="sunset">Sunset</option>
+            <option value="light">Light</option>
+          </select>
+        </div>
+      </nav>
+    </header>
+
+    <!-- Accent stripe -->
+    <div class="flag-stripe" aria-hidden="true"></div>
+
+    <!-- ===== TOOLBAR ===== -->
+    <div v-if="!showCart" class="toolbar" role="region" aria-label="Sorting and search">
+
+      <!-- Sort dropdowns -->
+      <div class="sorter">
+        <label for="sortKey">Sort by:</label>
+        <select id="sortKey" v-model="sortKey" aria-label="Sort attribute">
+          <option value="subject">Subject</option>
+          <option value="location">Location</option>
+          <option value="price">Price</option>
+          <option value="spaces">Spaces</option>
+        </select>
+
+        <select v-model="sortDir" aria-label="Sort direction">
+          <option value="asc">Ascending</option>
+          <option value="desc">Descending</option>
+        </select>
+      </div>
+      
+      <!-- Live search -->
+      <div class="search">
+        <i class="fa-solid fa-magnifying-glass search-icon" aria-hidden="true"></i>
+        <input v-model.trim="query"
+          type="text"
+          placeholder="Search as you type… (subject, location, price, spaces)"
+          aria-label="Live search"
+          @keydown.esc="clearSearch"/>
+        <button v-if="query" type="button" class="clear-btn" @click="clearSearch">Clear</button>
+      </div>
+    </div>
+
+    <!-- Floating sidebar (outside cards) -->
+    <transition name="flycart">
+      <aside class="flycart" v-if="cart.length && !showCart">
+        <header>
+          <h3>Selected items</h3>
+          <small class="muted">{{ cartCount }} item{{ cartCount>1?'s':'' }} • {{ currency(cartSubtotal) }}</small>
+        </header>
+        
+        <!-- Cart summary in the sidebar -->
+        <ul class="flycart-list">
+          <li v-for="entry in groupedCart" :key="entry.key">
+            <div class="title">{{ entry.subject }}</div>
+            <div class="meta">{{ entry.location }}</div>
+            <div class="price">{{ currency(entry.price * entry.qty) }}</div>
+            
+            <!-- Quantity controls -->
+            <div class="qty">
+              <div class="qty-pill">
+                <button class="qbtn minus" @click="decQty(entry)" :disabled="entry.qty <= 1">−</button>
+                <span class="qnum">{{ entry.qty }}</span>
+                <button class="qbtn plus"  @click="incQty(entry)" :disabled="remainingSpacesById(entry.key) === 0">+</button>
+              </div>
+            </div>
+
+            <button class="mini danger" @click="removeEntry(entry)">Remove</button>
+          </li>
+        </ul>
+
+        <!-- Buttons to navigate to the main cart page -->
+        <div class="flycart-actions">
+          <button class="secondary" @click="goToCart">Go to Cart</button>
+          <button class="primary"  @click="goToCart">Checkout</button>
+        </div>
+      </aside>
+    </transition>
+
+    <!-- ===== LESSONS PAGE ===== -->
+    <section v-if="!showCart" class="lessons" aria-label="Lessons list">
+      <ul class="grid">
+        <li v-for="lesson in lessons" :key="lesson._id || lesson.id" class="card">
+
+          <!-- Lesson Thumbnail -->
+          <div class="card-media">
+            <img v-if="lessonImage(lesson)" 
+              :src="lessonImage(lesson)"
+              class="thumb" loading="lazy"
+              @error="$event.target.style.display='none'">
+            <i v-else :class="lessonIcon(lesson)" aria-hidden="true"></i>
+          </div>
+
+          <!-- Lesson Body -->
+          <div class="card-body">
+            <h3>{{ lesson.subject }}</h3>
+
+            <p class="meta">
+              <span class="badge-soft"><i class="fa-solid fa-location-dot"></i> {{ lesson.location }}</span>
+              <span class="badge-soft"><i class="fa-solid fa-money-bill-wave"></i> {{ currency(lesson.price) }}</span>
+              <span class="badge-soft" :class="spaceClass(remainingSpaces(lesson))">
+                <i class="fa-solid fa-users"></i>
+                <strong>{{ remainingSpaces(lesson) }}</strong> spaces
+              </span>
+            </p>
+          </div>
+
+          <!-- Add to cart button -->
+          <div class="card-actions">
+            <button
+              :title="remainingSpaces(lesson) + ' space(s) left'"
+              :disabled="remainingSpaces(lesson) === 0"
+              @click="addToCart(lesson)"
+            >
+              {{ remainingSpaces(lesson) === 0 ? 'Sold out' : 'Add to Cart / Azout Panier' }}
+            </button>
+          </div>
+
+        </li>
+      </ul>
+    </section>
+
+    <!-- ===== CART PAGE ===== -->
+    <section v-else class="cart" aria-label="Shopping cart">
+      <h2>Your Cart</h2>
+      
+      <!-- Empty cart text -->
+      <div v-if="groupedCart.length === 0" class="empty">
+        No items. Go add some lessons!
+      </div>
+
+      <!-- Main cart layout -->
+      <div v-else class="cart-layout">
+
+        <!-- LEFT SIDE: table + checkout form -->
+        <div class="cart-main">
+          <div class="cart-panel">
+
+            <!-- Cart table -->
+            <ul class="cart-table">
+              <li class="cart-head">
+                <span>Lesson</span>
+                <span>Location</span>
+                <span>Qty</span>
+                <span>Price</span>
+                <span>Total</span>
+                <span></span>
+              </li>
+
+              <!-- Cart rows -->
+              <li v-for="entry in groupedCart" :key="entry.key" class="cart-row">
+                <span class="title">{{ entry.subject }}</span>
+                <span class="meta">{{ entry.location }}</span>
+
+                <!-- Quantity controls -->
+                <span class="qty">
+                  <div class="qty-pill">
+                    <button class="qbtn minus" @click="decQty(entry)" :disabled="entry.qty <= 1">−</button>
+                    <span class="qnum">{{ entry.qty }}</span>
+                    <button class="qbtn plus"  @click="incQty(entry)" :disabled="remainingSpacesById(entry.key) === 0">+</button>
+                  </div>
+                </span>
+
+                <span class="price">{{ currency(entry.price) }}</span>
+                <span class="line-total">{{ currency(entry.price * entry.qty) }}</span>
+
+                <span class="actions">
+                  <button class="mini danger" @click="removeEntry(entry)">Remove</button>
+                </span>
+              </li>
+            </ul>
+
+            <!-- Subtotal display -->
+            <div class="cart-summary">
+              <div class="totals">
+                <div><span>Subtotal</span><strong>{{ currency(cartSubtotal) }}</strong></div>
+              </div>
+
+              <div class="summary-actions">
+                <button class="secondary" @click="cart = []">Clear cart</button>
+              </div>
+            </div>
+
+            <!-- Checkout form -->
+            <div id="checkout" class="checkout" aria-label="Checkout">
+              <h3>Checkout</h3>
+
+              <!-- Form submits to submitOrder() -->
+              <form @submit.prevent="submitOrder" novalidate>
+
+                <label>
+                  Name
+                  <input v-model.trim="order.name" type="text" placeholder="Letters only" required />
+                  <small class="hint" :class="{ error: order.name && !validName }">
+                    {{ order.name && !validName ? 'Name should contain letters/spaces only.' : ' ' }}
+                  </small>
+                </label>
+
+                <label>
+                  Phone
+                  <input v-model.trim="order.phone" type="text" placeholder="12345678" required />
+                  <small class="hint" :class="{ error: order.phone && !validPhone }">
+                    {{ order.phone && !validPhone ? 'Use 8 digits' : ' ' }}
+                  </small>
+                </label>
+
+                <!-- FINAL button → triggers POST + PUT fetches -->
+                <button :disabled="!validName || !validPhone || groupedCart.length===0 || isLoading" type="submit">
+                  <span v-if="!isLoading">Submit Order</span>
+                  <span v-else><i class="fa-solid fa-spinner fa-spin"></i> Submitting…</span>
+                </button>
+              </form>
+
+              <!-- Success message -->
+              <p v-if="orderMessage" class="success">{{ orderMessage }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT SIDE: Order Summary box -->
+        <aside class="order-summary">
+          <h3>Order Summary</h3>
+          <ul class="totals">
+            <li><span>Items</span><strong>{{ totalQty }}</strong></li>
+            <li><span>Subtotal</span><strong>{{ currency(cartSubtotal) }}</strong></li>
+            <li><span>VAT (15%)</span><strong>{{ currency(vatAmount) }}</strong></li>
+            <li class="grand"><span>Total</span><strong>{{ currency(grandTotal) }}</strong></li>
+          </ul>
+
+          <!-- Scrolls user down to the checkout form -->
+          <button class="proceed" :disabled="groupedCart.length===0" @click="scrollToCheckout">
+            <i class="fa-solid fa-arrow-right-to-bracket"></i>
+            Proceed to Checkout
+          </button>
+
+          <small class="muted">You’ll confirm your details below.</small>
+
+          <button class="secondary wfull mt8" @click="cart = []">Clear cart</button>
+        </aside>
+      </div>
+    </section>
+
+    <!-- Toast popup message (when adding to cart, errors, etc.) -->
+    <div v-if="toast" class="toast" role="status" aria-live="polite">{{ toast }}</div>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="footer">
+      <div class="footer-inner">
+        <div class="footer-grid">
+          <div>
+            <h4>After-School Lessons</h4>
+            <p class="muted">Helping students find great activities.</p>
+          </div>
+          <nav class="footer-nav">
+            <a href="#" @click.prevent="goLessons">Home</a>
+            <a href="#" @click.prevent="goLessons">Lessons</a>
+            <a href="#" @click.prevent="goCart">Cart</a>
+            <a href="mailto:info@example.com">Contact</a>
+          </nav>
+          <div class="footer-social">
+            <a href="https://facebook.com" target="_blank"><i class="fab fa-facebook"></i></a>
+            <a href="https://instagram.com" target="_blank"><i class="fab fa-instagram"></i></a>
+            <a href="https://x.com" target="_blank"><i class="fab fa-twitter"></i></a>
+          </div>
+        </div>
+        <div class="footer-meta">
+          <small>© CST3144 – Full-Stack Coursework</small>
+        </div>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>
