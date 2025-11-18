@@ -7,10 +7,10 @@ to the Express + MongoDB backend.
 ---
 
 ## 🌐 Live Demo
-- **GitHub Pages:** https://<your-github-username>.github.io/cst3144-frontend
-- **Backend API:** https://<your-render-app>.onrender.com
+- **GitHub Pages:** https://vashisth14.github.io/vue.js/
+- **Backend API:** https://node-js-d2bi.onrender.com
 
----
+---f
 
 ## 🚀 Features
 - Displays all lessons fetched from the backend (`GET /lessons`)
