@@ -214,7 +214,6 @@ new Vue({
     // switch to cart page and scroll to it
     goToCart() {
       this.showCart = true;
-      this.showProduct = false; // switch to cart page
       this.$nextTick(() => {
         const el = document.querySelector(".cart");
         if (el) el.scrollIntoView({ behavior: "smooth" });
