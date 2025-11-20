@@ -1,30 +1,54 @@
-# Lesson Booking – Frontend (Vue.js)
+After-School Lessons – Full Stack Coursework (CST3144)
 
-This is the **Vue.js frontend** for the CST3144 coursework.  
-It displays available lessons, allows users to add them to a cart, and submit orders
-to the Express + MongoDB backend.
-
----
-
-## 🌐 Live Demo
-- **GitHub Pages:** https://vashisth14.github.io/vue.js/
-- **Backend API:** https://node-js-d2bi.onrender.com
-
----f
-
-## 🚀 Features
-- Displays all lessons fetched from the backend (`GET /lessons`)
-- Search, sort, and filter functionality with **search-as-you-type** (debounced)
-- Add to Cart / Remove from Cart
-- Checkout form with validation (name and 8-digit phone)
-- Submits order to backend (`POST /orders`)
-- Updates lesson spaces using (`PUT /lessons/:id`)
-- Displays success/error messages
-- Responsive and modern layout
+A full-stack web application built for the CST3144 – Full Stack Development module.
+The system allows users to browse available lessons, manage their cart, and submit orders.
+This project includes a Vue.js frontend hosted on GitHub Pages and a Node.js + Express backend hosted on Render, connected to MongoDB Atlas.
 
 ---
 
-## 🖼️ Lesson Images
+# Live Demo
+
+Frontend (GitHub Pages)
+ https://vashisth14.github.io/vue.js/
+
+Backend API (Render)
+ https://node-js-d2bi.onrender.com
+
+Frontend (GitHub Repository #1)
+  ├── index.html
+  ├── app.js
+  ├── style.css
+  ├── images/
+  ├── README.md
+
+# Features
+Lesson catalogue with sorting (subject, location, price, spaces)
+
+Search-as-you-type (fetches from backend)
+
+Pagination-ready layout
+
+Dynamic cart with grouped items
+
+Quantity control (+ / –)
+
+Remaining spaces validation
+
+Order Summary (Subtotal, VAT, Total)
+
+Checkout form (Name & Phone validation)
+
+Smooth navigation between pages
+
+Fully responsive design
+
+CSP (Content-Security-Policy) protection
+
+Deployed entirely on GitHub Pages
+
+---
+
+## Lesson Images
 Lesson images are stored **on the frontend** in  
 `/images/lessons/`.  
 Each filename matches the lesson subject (slugified).  
@@ -38,7 +62,7 @@ This is stated clearly in the documentation and accepted for the coursework rubr
 
 ---
 
-## ⚙️ Project Setup
+##  Project Setup
 ```bash
 # open the folder in VS Code
 # install Live Server extension
