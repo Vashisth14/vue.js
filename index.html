@@ -110,41 +110,56 @@
       </div>
     </div>
 
-    <!-- Floating sidebar (outside cards) -->
-    <transition name="flycart">
-      <aside class="flycart" v-if="cart.length && !showCart">
-        <header>
-          <h3>Selected items</h3>
-          <small class="muted">{{ cartCount }} item{{ cartCount>1?'s':'' }} • {{ currency(cartSubtotal) }}</small>
-        </header>
-        
-        <!-- Cart summary in the sidebar -->
-        <ul class="flycart-list">
-          <li v-for="entry in groupedCart" :key="entry.key">
-            <div class="title">{{ entry.subject }}</div>
-            <div class="meta">{{ entry.location }}</div>
-            <div class="price">{{ currency(entry.price * entry.qty) }}</div>
-            
-            <!-- Quantity controls -->
-            <div class="qty">
-              <div class="qty-pill">
-                <button class="qbtn minus" @click="decQty(entry)" :disabled="entry.qty <= 1">−</button>
-                <span class="qnum">{{ entry.qty }}</span>
-                <button class="qbtn plus"  @click="incQty(entry)" :disabled="remainingSpacesById(entry.key) === 0">+</button>
-              </div>
-            </div>
+    <!-- ===== TOP FLOATING LAYOUT (LEFT INFO + RIGHT CART) ===== -->
+    <div class="top-floating-row" v-if="!showCart">
 
-            <button class="mini danger" @click="removeEntry(entry)">Remove</button>
-          </li>
+      <!-- LEFT INFO CARD -->
+      <section class="left-info-card">
+        <h2>Find the perfect after-school lesson</h2>
+        <p>Browse lessons, add them to your cart, and confirm your booking with ease.</p>
+        <ul class="steps">
+          <li><strong>1.</strong> Search or sort the lessons.</li>
+          <li><strong>2.</strong> Add lessons to your cart.</li>
+          <li><strong>3.</strong> Checkout securely.</li>
         </ul>
+      </section>
 
-        <!-- Buttons to navigate to the main cart page -->
-        <div class="flycart-actions">
-          <button class="secondary" @click="goToCart">Go to Cart</button>
-          <button class="primary"  @click="goToCart">Checkout</button>
-        </div>
-      </aside>
-    </transition>
+      <!-- Floating sidebar (outside cards) -->
+      <transition name="flycart">
+        <aside class="flycart" v-if="cart.length && !showCart">
+          <header>
+            <h3>Selected items</h3>
+            <small class="muted">{{ cartCount }} item{{ cartCount>1?'s':'' }} • {{ currency(cartSubtotal) }}</small>
+          </header>
+          
+          <!-- Cart summary in the sidebar -->
+          <ul class="flycart-list">
+            <li v-for="entry in groupedCart" :key="entry.key">
+              <div class="title">{{ entry.subject }}</div>
+              <div class="meta">{{ entry.location }}</div>
+              <div class="price">{{ currency(entry.price * entry.qty) }}</div>
+              
+              <!-- Quantity controls -->
+              <div class="qty">
+                <div class="qty-pill">
+                  <button class="qbtn minus" @click="decQty(entry)" :disabled="entry.qty <= 1">−</button>
+                  <span class="qnum">{{ entry.qty }}</span>
+                  <button class="qbtn plus"  @click="incQty(entry)" :disabled="remainingSpacesById(entry.key) === 0">+</button>
+                </div>
+              </div>
+
+              <button class="mini danger" @click="removeEntry(entry)">Remove</button>
+            </li>
+          </ul>
+
+          <!-- Buttons to navigate to the main cart page -->
+          <div class="flycart-actions">
+            <button class="secondary" @click="goToCart">Go to Cart</button>
+            <button class="primary"  @click="goToCart">Checkout</button>
+          </div>
+        </aside>
+      </transition>
+    
 
     <!-- ===== LESSONS PAGE ===== -->
     <section v-if="!showCart" class="lessons" aria-label="Lessons list">
