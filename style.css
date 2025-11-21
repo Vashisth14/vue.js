@@ -90,11 +90,14 @@ body{
 }
 
 .brand span {
-  background: linear-gradient(135deg, var(--primary), var(--primary-2));
+  background: linear-gradient(135deg,
+      color-mix(in srgb, var(--primary) 25%, #3da7ff),
+      color-mix(in srgb, var(--primary-2) 25%, #4cffd7)
+  );
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 3px 6px color-mix(in srgb, var(--primary) 50%, transparent));
 }
-
 
 .hamburger{
   display:none; width:40px; height:40px; align-items:center; justify-content:center;
@@ -384,14 +387,21 @@ button.danger{
   border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
   padding-bottom: 6px;
 }
-.flycart h3{
+.flycart h3 {
   margin: 0 0 2px 0;
   font-size: 18px;
-  font-weight: 700;
-  background: linear-gradient(135deg, var(--primary), var(--primary-2));
+  font-weight: 800;
+
+  background: linear-gradient(135deg,
+      color-mix(in srgb, var(--primary) 30%, #47a8ff),
+      color-mix(in srgb, var(--primary-2) 30%, #4dffb1)
+  );
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+
+  filter: drop-shadow(0 3px 5px rgba(0,0,0,.4));
 }
+
 .flycart small{ font-size: 13px; }
 
 /* Item list */
@@ -703,11 +713,14 @@ button.danger{
   -webkit-backdrop-filter: blur(14px) saturate(160%);
 }
 
-.left-info-card h2{
-  margin: 0 0 6px 0;
+.left-info-card h2 {
   font-size: 18px;
-  font-weight: 700;
-  background: linear-gradient(135deg, var(--primary), var(--primary-2));
+  font-weight: 800;
+
+  background: linear-gradient(135deg,
+      color-mix(in srgb, var(--primary) 40%, #6ab8ff),
+      color-mix(in srgb, var(--primary-2) 40%, #5bffd1)
+  );
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
