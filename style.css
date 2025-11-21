@@ -89,6 +89,22 @@ body{
   color: var(--text);
 }
 
+.brand {
+  position: relative;
+}
+
+/* subtitle */
+.brand::after{
+  content: "Book fun after-school activities in Mauritius";
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  opacity: .70;
+  margin-top: 2px;
+  color: var(--muted);
+}
+
+
 .brand span {
   background: linear-gradient(135deg,
       color-mix(in srgb, var(--primary) 25%, #3da7ff),
@@ -299,6 +315,48 @@ button.danger{
 .card-actions{ padding:16px; margin-top:auto; display:flex; justify-content:space-between; align-items:center }
 
 /* ===================== CART & CHECKOUT ================== */
+.cart h2,
+.checkout h3,
+.order-summary h3 {
+  background: linear-gradient(135deg,
+      color-mix(in srgb, var(--primary) 30%, #4ea7ff),
+      color-mix(in srgb, var(--primary-2) 30%, #59ffcf)
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 800;
+}
+
+.cart h2 i,
+.order-summary h3 i,
+.flycart h3 i{
+  margin-right: 6px;
+}
+
+.cart h2,
+.order-summary h3,
+.left-info-card h2,
+.flycart h3 {
+  position: relative;
+  display: inline-block;
+}
+
+.cart h2::after,
+.order-summary h3::after,
+.left-info-card h2::after,
+.flycart h3::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -4px;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--primary), var(--primary-2));
+  opacity: .8;
+}
+
+
 .cart .empty{ background:var(--panel); padding:16px; border-radius:12px; border:1px solid var(--border) }
 .cart-list{ list-style:none; padding:0 }
 .cart-row{
@@ -387,6 +445,18 @@ button.danger{
   border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
   padding-bottom: 6px;
 }
+
+.flycart header small{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--chip-bg) 90%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  font-size: 12px;
+}
+
 .flycart h3 {
   margin: 0 0 2px 0;
   font-size: 18px;
