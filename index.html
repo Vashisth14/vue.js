@@ -126,7 +126,7 @@
       <transition name="flycart">
         <aside class="flycart" v-if="cart.length && !showCart">
           <header>
-            <h3>Selected items</h3>
+            <h3><i class="fa-solid fa-list-check"></i> Selected items</h3>
             <small class="muted">{{ cartCount }} item{{ cartCount>1?'s':'' }} • {{ currency(cartSubtotal) }}</small>
           </header>
           
@@ -204,7 +204,7 @@
 
     <!-- ===== CART PAGE ===== -->
     <section v-else class="cart" aria-label="Shopping cart">
-      <h2>Your Cart</h2>
+      <h2><i class="fa-solid fa-cart-shopping"></i> Your Cart</h2>
       
       <!-- Empty cart text -->
       <div v-if="groupedCart.length === 0" class="empty">
@@ -301,7 +301,7 @@
 
         <!-- RIGHT SIDE: Order Summary box -->
         <aside class="order-summary">
-          <h3>Order Summary</h3>
+          <h3><i class="fa-solid fa-receipt"></i> Order Summary</h3>
           <ul class="totals">
             <li><span>Items</span><strong>{{ totalQty }}</strong></li>
             <li><span>Subtotal</span><strong>{{ currency(cartSubtotal) }}</strong></li>
